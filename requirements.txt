@@ -1,1 +1,5 @@
 pytest
+gymnasium
+numpy
+pandas
+matplotlib
