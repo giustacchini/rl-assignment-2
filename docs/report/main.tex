@@ -252,6 +252,11 @@
 \subsection{Question 2}
 
 \subsubsection*{\textcolor{blue}{Q2: ``Discuss the role of experience replay in DQN. How does it help to address the correlation problem in reinforcement learning? ``}}
+Experience Replay is one of the critical elements of  Deep Q-Networks (DQN),  where the agent saves its experiences  $(s, a, r, s')$ in the memory, which can be used during learning rather than learning from the latest experience only. In the training process, samples are randomly selected from the experience replay buffer.
+
+The main benefit of using experience replay is that it helps reduce the correlation problem,  since in reinforcement learning, the experiences that come one after another are highly correlated. Random sampling mixes experiences from different time steps, which reduces the correlation between successive updates and makes learning more stable. 
+
+Experience Replay also allows the same experience to be used multiple times while the agent still learning, making learning more efficient and reducing the variance of the updates.
 
 \subsection{Question 3}
 
