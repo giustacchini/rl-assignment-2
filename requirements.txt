@@ -1,2 +1,6 @@
 pytest
+gymnasium
+numpy
+pandas
+matplotlib
 pytest-cov
