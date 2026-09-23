@@ -267,9 +267,9 @@ The key components of this update rule are:
     \item $R_{t+1}$: the immediate scalar reward received after taking action $A_t$.
     \item $\gamma \in [0,1)$: the discount rate for future rewards.
     \item $\max_{a} Q(S_{t+1}, a)$: the maximum estimated value across all possible actions $a$ in the
-    resulting next state $S_{t+1}$.
+          resulting next state $S_{t+1}$.
     \item $R_{t+1} + \gamma \max_{a} Q(S_{t+1}, a) - Q(S_t, A_t)$: the TD error, $\delta_t$, representing
-    the gap between the updated target estimate and the current estimate.
+          the gap between the updated target estimate and the current estimate.
 \end{itemize}
 
 The defining feature of Q-learning is its off-policy nature: the learned action-value function $Q$
@@ -288,21 +288,21 @@ The Q-learning update rule relates directly to this equation in the following wa
 
 \begin{itemize}
     \item \textbf{Update rule construction}: Q-learning's update rule is obtained by turning the Bellman
-    optimality equation for $q_*$ into a step-by-step update rule that can be applied incrementally,
-    rather than solved for directly.
+          optimality equation for $q_*$ into a step-by-step update rule that can be applied incrementally,
+          rather than solved for directly.
 
     \item \textbf{Sample updates vs.\ expected updates}: Dynamic programming solves the Bellman
-    optimality equation using \emph{expected} updates, which require full knowledge of the transition
-    dynamics $p(s', r \mid s, a)$ to average over every possible next state. Q-learning instead uses
-    \emph{sample} updates: it plugs in one real, observed transition $(S_t, A_t, R_{t+1}, S_{t+1})$ from
-    the environment in place of the full expectation, letting repeated sampling substitute for exact
-    averaging.
+          optimality equation using \emph{expected} updates, which require full knowledge of the transition
+          dynamics $p(s', r \mid s, a)$ to average over every possible next state. Q-learning instead uses
+          \emph{sample} updates: it plugs in one real, observed transition $(S_t, A_t, R_{t+1}, S_{t+1})$ from
+          the environment in place of the full expectation, letting repeated sampling substitute for exact
+          averaging.
 
     \item \textbf{Target policy}: The Bellman optimality equation assumes the best possible action is
-    always taken at the next state, which is exactly what $\max_{a'} q_*(s', a')$ represents. Q-learning
-    mirrors this by using $\max_a Q(S_{t+1}, a)$ in its own update target, evaluating a greedy target
-    policy even though the action actually taken next may come from a more exploratory behavior policy
-    (e.g.\ $\epsilon$-greedy).
+          always taken at the next state, which is exactly what $\max_{a'} q_*(s', a')$ represents. Q-learning
+          mirrors this by using $\max_a Q(S_{t+1}, a)$ in its own update target, evaluating a greedy target
+          policy even though the action actually taken next may come from a more exploratory behavior policy
+          (e.g.\ $\epsilon$-greedy).
 \end{itemize}
 
 \subsubsection{Potential challenges in using Q-learning}
@@ -313,36 +313,43 @@ pairs are visited infinitely often, several practical challenges can arise:
 \begin{itemize}
 
     \item \textbf{The instability}: When Q-learning is combined with function
-    approximation (e.g.\ neural networks or linear models), it brings together elements like: function approximation, bootstrapping (updating estimates using other
-    estimates), and off-policy learning. This combination can break convergence guarantees, causing value estimates to fluctuate or diverge.
+          approximation (e.g.\ neural networks or linear models), it brings together elements like: function approximation, bootstrapping (updating estimates using other
+          estimates), and off-policy learning. This combination can break convergence guarantees, causing value estimates to fluctuate or diverge.
 
     \item \textbf{Suboptimal online performance during exploration}: Because Q-learning learns about
-    the optimal (greedy) policy while actually behaving according to an exploratory policy (e.g.\
-    $\epsilon$-greedy), its performance \emph{during training} can be poor in environments with
-    high-risk regions. The classic example is the Cliff Walking task, where exploratory random actions
-    near the optimal path can cause frequent falls, compared to safer on-policy algorithms such as
-    Sarsa.
+          the optimal (greedy) policy while actually behaving according to an exploratory policy (e.g.\
+          $\epsilon$-greedy), its performance \emph{during training} can be poor in environments with
+          high-risk regions. The classic example is the Cliff Walking task, where exploratory random actions
+          near the optimal path can cause frequent falls, compared to safer on-policy algorithms such as
+          Sarsa.
 
     \item \textbf{Continual exploration requirement}: Convergence to $q_*$ is only guaranteed if every
-    state--action pair continues to be visited infinitely often, which requires careful tuning of the
-    exploration strategy.
+          state--action pair continues to be visited infinitely often, which requires careful tuning of the
+          exploration strategy.
 
 \end{itemize}
 
 \subsection{Question 2}
 
 \subsubsection*{\textcolor{blue}{Q2: ``Discuss the role of experience replay in DQN. How does it help to address the correlation problem in reinforcement learning? ``}}
+
+\subsubsection*{Experience Replay}
+
 Experience Replay is one of the critical elements of  Deep Q-Networks (DQN),  where the agent saves its experiences  $(s, a, r, s')$ in the memory, which can be used during learning rather than learning from the latest experience only. In the training process, samples are randomly selected from the experience replay buffer.
 
 The main benefit of using experience replay is that it helps reduce the correlation problem,  since in reinforcement learning, the experiences that come one after another are highly correlated. Random sampling mixes experiences from different time steps, which reduces the correlation between successive updates and makes learning more stable.
 
 Experience Replay also allows the same experience to be used multiple times while the agent still learning, making learning more efficient and reducing the variance of the updates.
 
+\newpage
+
 \subsection{Question 3}
 
 \subsubsection*{\textcolor{blue}{Q3: ``Explain the concept of the target network in DQN. How does it help to stabilize the learning process? ``}}
 
-\subsubsection*{Target Network:} The target network is a copy of the Q-network that is used to calculate the target Q-values during training. The target network is updated less frequently than the Q-network, which helps to stabilize the learning process by reducing the correlation between the Q-values and the target values.
+\subsubsection{Target Network}
+
+The target network is a copy of the Q-network that is used to calculate the target Q-values during training. The target network is updated less frequently than the Q-network, which helps to stabilize the learning process by reducing the correlation between the Q-values and the target values.
 
 Keep in mind that the \textit{target network} is \textbf{NOT} necessarily a different architecture or a separate trained network. In most cases it is simply a periodically updated copy of the online network.
 
@@ -355,6 +362,9 @@ But since we use the same network to calculate the target, it can lead to instab
     \item $Q(s', a'; \theta^-)$ (\textbf{Target network} $\rightarrow$ the network that is used to calculate the target Q-values)
 \end{itemize}
 
+\newpage
+
+\subsubsection{Target Network Training Loop Example}
 
 A simplified DQN training loop with a target network can be described as follows:
 \begin{tcolorbox}[
@@ -368,7 +378,7 @@ A simplified DQN training loop with a target network can be described as follows
     \textbf{Initialize} target network $\theta^- = \theta$\\[2pt]
 
     \textbf{Repeat:}
-    \begin{enumerate}[leftmargin=*, itemsep=2pt]
+    \begin{enumerate}[leftmargin=*, itemsep=0pt]
         \item Take an action using the online network.
         \item Store transition $(s, a, r, s')$ in the Experience/Replay buffer.
         \item Sample a mini-batch from the replay buffer.
