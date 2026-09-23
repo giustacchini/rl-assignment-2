@@ -254,7 +254,7 @@
 \subsubsection*{\textcolor{blue}{Q2: ``Discuss the role of experience replay in DQN. How does it help to address the correlation problem in reinforcement learning? ``}}
 Experience Replay is one of the critical elements of  Deep Q-Networks (DQN),  where the agent saves its experiences  $(s, a, r, s')$ in the memory, which can be used during learning rather than learning from the latest experience only. In the training process, samples are randomly selected from the experience replay buffer.
 
-The main benefit of using experience replay is that it helps reduce the correlation problem,  since in reinforcement learning, the experiences that come one after another are highly correlated. Random sampling mixes experiences from different time steps, which reduces the correlation between successive updates and makes learning more stable. 
+The main benefit of using experience replay is that it helps reduce the correlation problem,  since in reinforcement learning, the experiences that come one after another are highly correlated. Random sampling mixes experiences from different time steps, which reduces the correlation between successive updates and makes learning more stable.
 
 Experience Replay also allows the same experience to be used multiple times while the agent still learning, making learning more efficient and reducing the variance of the updates.
 
@@ -262,12 +262,56 @@ Experience Replay also allows the same experience to be used multiple times whil
 
 \subsubsection*{\textcolor{blue}{Q3: ``Explain the concept of the target network in DQN. How does it help to stabilize the learning process? ``}}
 
+\subsubsection*{Target Network:} The target network is a copy of the Q-network that is used to calculate the target Q-values during training. The target network is updated less frequently than the Q-network, which helps to stabilize the learning process by reducing the correlation between the Q-values and the target values.
 
+Keep in mind that the \textit{target network} is \textbf{NOT} necessarily a different architecture or a separate trained network. In most cases it is simply a periodically updated copy of the online network.
+
+In a neural network with $\theta$ parameters, we have $Q(s, a; \theta)$ and the target becomes $$y = r + \gamma \max_{a'} Q(s', a'; \theta)$$
+
+But since we use the same network to calculate the target, it can lead to instability and divergence in the learning process because the target would move with the parameters. To address this issue, we introduce a \textit{target network} with parameters $\theta^-$, which is a copy of the Q-network that is updated less frequently (e.g., every $C$ steps). The target becomes $$y = r + \gamma \max_{a'} Q(s', a'; \theta^-)$$
+
+\begin{itemize}
+    \item $Q(s, a; \theta)$ (\textbf{Online network} $\rightarrow$ the network that is being trained)
+    \item $Q(s', a'; \theta^-)$ (\textbf{Target network} $\rightarrow$ the network that is used to calculate the target Q-values)
+\end{itemize}
+
+
+A simplified DQN training loop with a target network can be described as follows:
+\begin{tcolorbox}[
+        colback=blue!5!white,
+        colframe=blue!60!black,
+        title=\textbf{DQN Target-Network Pseudocode},
+        sharp corners,
+        boxrule=0.8pt
+    ]
+    \textbf{Initialize} online network $\theta$\\
+    \textbf{Initialize} target network $\theta^- = \theta$\\[2pt]
+
+    \textbf{Repeat:}
+    \begin{enumerate}[leftmargin=*, itemsep=2pt]
+        \item Take an action using the online network.
+        \item Store transition $(s, a, r, s')$ in the Experience/Replay buffer.
+        \item Sample a mini-batch from the replay buffer.
+        \item Calculate targets using the target network:
+              \[
+                  y = r + \gamma \max_{a'} Q(s', a'; \theta^-).
+              \]
+        \item Update the online network $\theta$ to minimize:
+              \[
+                  \bigl(y - Q(s,a;\theta)\bigr)^2.
+              \]
+        \item Every $C$ steps, update the target network:
+              \[
+                  \theta^- \leftarrow \theta.
+              \]
+    \end{enumerate}
+\end{tcolorbox}
+
+The main takeaway is that the target network helps to stabilize the learning process by providing a more stable target for the Q-value updates, which reduces the risk of divergence and improves convergence.
 
 % =========== REFERENCES =========== 
 
 \bibliographystyle{ieeetr}
 \bibliography{rl}
-\nocite{sutton2018reinforcement}
 
 \end{document}
