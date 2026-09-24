@@ -3,7 +3,8 @@
 
 import keras
 
-GAMMA = 0.99  # Discount factor for future rewards
+_GAMMA = 0.99  # Discount factor for future rewards
+N = 100  # Size of the experience replay buffer
 
 
 class DQN:
@@ -49,6 +50,20 @@ class DQN:
         """Copy the online network weights to the target network."""
         self.target_network.set_weights(self.network.get_weights())
 
+    def update_experience_replay(self, states, actions, rewards, next_states):
+        """
+        Update the experience replay buffer with new experiences.
+        :param states: A batch of states (input to the network).
+        :param actions: A batch of actions taken in those states.
+        :param rewards: A batch of rewards received after taking those actions.
+        :param next_states: A batch of next states resulting from those actions.
+        """
+        if len(self.experience_replay) < N:
+            self.experience_replay.append((states, actions, rewards, next_states))
+        else:
+            self.experience_replay.pop(0)
+            self.experience_replay.append((states, actions, rewards, next_states))
+
     def train(self, states, actions, rewards, next_states, d_t):
         """
         Train the DQN model using the provided experience replay data and a target network.
@@ -59,10 +74,11 @@ class DQN:
         :param next_states: A batch of next states resulting from those actions.
         :param d_t: A batch of boolean values indicating if the episode ended after each action.
         """
+        self.update_experience_replay(states, actions, rewards, next_states)
         # Compute target Q-values
         target_q_values = self.target_network.predict(next_states)
         max_target_q_values = target_q_values.max(axis=1)
-        targets = rewards + (1 - d_t) * GAMMA * max_target_q_values
+        targets = rewards + (1 - d_t) * _GAMMA * max_target_q_values
 
         # Create a mask for the actions taken
         action_masks = keras.utils.to_categorical(actions, num_classes=4)
