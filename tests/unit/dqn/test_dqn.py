@@ -1,7 +1,10 @@
 # python
 # test_dqn.py
 
-from dqn import DQN
+import numpy as np
+import pytest
+
+from dqn import DQN, N
 
 def test_default_dqn_input_layer_matches_state_space_dimensionality():
     dqn = DQN()
@@ -30,3 +33,86 @@ def test_dqn_hidden_layer_argument_produces_expected_architecture():
 
     assert dqn_custom_hidden_layer.network.layers[1].input.shape[1] == 32
     assert dqn_custom_hidden_layer.network.layers[3].input.shape[1] == 16
+
+
+def make_transition(index=0, done=False):
+    state = np.full(8, index, dtype=np.float32)
+    next_state = np.full(8, index + 1, dtype=np.float32)
+    return state, index % 4, float(index), next_state, done
+
+
+def test_replay_buffer_stores_complete_transition():
+    dqn = DQN()
+    transition = make_transition()
+
+    dqn.update_experience_replay(*transition)
+
+    assert len(dqn.experience_replay) == 1
+    assert len(dqn.experience_replay[0]) == 5
+    assert dqn.experience_replay[0][-1] is False
+
+
+def test_replay_buffer_does_not_exceed_capacity():
+    dqn = DQN()
+
+    for index in range(N + 1):
+        dqn.update_experience_replay(*make_transition(index))
+
+    assert len(dqn.experience_replay) == N
+    assert dqn.experience_replay[0][0][0] == 1
+
+
+def test_sample_experiences_returns_requested_batch_shapes():
+    dqn = DQN()
+    batch_size = 8
+
+    for index in range(batch_size):
+        dqn.update_experience_replay(*make_transition(index))
+
+    states, actions, rewards, next_states, dones = (
+        dqn.sample_experiences(batch_size)
+    )
+
+    assert states.shape == (batch_size, 8)
+    assert actions.shape == (batch_size,)
+    assert rewards.shape == (batch_size,)
+    assert next_states.shape == (batch_size, 8)
+    assert dones.shape == (batch_size,)
+
+
+def test_sample_experiences_rejects_undersized_buffer():
+    dqn = DQN()
+
+    with pytest.raises(ValueError):
+        dqn.sample_experiences(1)
+
+
+def test_replay_trains_and_decays_epsilon():
+    dqn = DQN()
+    batch_size = 8
+
+    for index in range(batch_size):
+        dqn.update_experience_replay(*make_transition(index))
+
+    initial_epsilon = dqn.epsilon
+
+    assert dqn.replay(batch_size) is True
+    assert dqn.train_steps == 1
+    assert dqn.epsilon < initial_epsilon
+    assert dqn.epsilon >= dqn.epsilon_min
+
+
+def test_replay_skips_training_until_batch_is_available():
+    dqn = DQN()
+
+    assert dqn.replay(1) is False
+    assert dqn.train_steps == 0
+
+
+def test_choose_action_returns_valid_lunar_lander_action():
+    dqn = DQN()
+    state = np.zeros(8, dtype=np.float32)
+
+    actions = {dqn.choose_action(state) for _ in range(20)}
+
+    assert actions <= {0, 1, 2, 3}

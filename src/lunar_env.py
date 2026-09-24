@@ -8,18 +8,28 @@ state, info = env.reset()
 
 # Instantiate the DQN network
 dqn = DQN(hidden_layers=[16, 16], target_update_frequency=100)
+batch_size = 64
 
 for _ in range(500):
-    action = env.action_space.sample()
+    # action = env.action_space.sample()
+    action = dqn.choose_action(state)
 
-    # Use epsilon-greedy policy to select action
+    current_state = state
+    next_state, reward, terminated, truncated, info = env.step(action)
+    done = terminated or truncated
 
-    state, reward, terminated, truncated, info = env.step(action)
+    dqn.update_experience_replay(
+        current_state,
+        action,
+        reward,
+        next_state,
+        done,
+    )
+    dqn.replay(batch_size)
 
-    # Train the network
-    dqn.train(states=state, actions=action, rewards=reward, next_states=state, d_t=terminated or truncated)
+    state = next_state
 
-    if terminated or truncated:
+    if done:
         state, info = env.reset()
 
 env.close()

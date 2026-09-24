@@ -1,7 +1,10 @@
 # python
 # DQN.py
 
+import random
+
 import keras
+import numpy as np
 
 _GAMMA = 0.99  # Discount factor for future rewards
 N = 100  # Size of the experience replay buffer
@@ -39,30 +42,83 @@ class DQN:
             self.network.add(keras.layers.Dense(layer))
             self.network.add(keras.layers.ReLU())
         self.network.add(keras.layers.Dense(4))
+        self.network.compile(
+            optimizer=keras.optimizers.Adam(learning_rate=0.001),
+            loss=keras.losses.Huber(),
+        )
 
         self.target_network = keras.models.clone_model(self.network)
         self.target_network.set_weights(self.network.get_weights())
         self.target_update_frequency = target_update_frequency
         self.train_steps = 0
         self.experience_replay = []
+        self.epsilon = 1.0
+        self.epsilon_min = 0.05
+        self.epsilon_decay = 0.995
+
+    def choose_action(self, state):
+        """Choose a random action or the action with the highest Q-value."""
+        if random.random() < self.epsilon:
+            return random.randrange(4)
+
+        state = np.asarray(state, dtype=np.float32)
+        state = np.expand_dims(state, axis=0)
+        q_values = self.network(state, training=False).numpy()[0]
+        return int(np.argmax(q_values))
 
     def update_target_network(self):
         """Copy the online network weights to the target network."""
         self.target_network.set_weights(self.network.get_weights())
 
-    def update_experience_replay(self, states, actions, rewards, next_states):
+    def update_experience_replay(self, state, action, reward, next_state, done):
         """
-        Update the experience replay buffer with new experiences.
-        :param states: A batch of states (input to the network).
-        :param actions: A batch of actions taken in those states.
-        :param rewards: A batch of rewards received after taking those actions.
-        :param next_states: A batch of next states resulting from those actions.
+        Store one transition in the experience replay buffer.
+        :param state: The state before taking the action.
+        :param action: The action taken in the state.
+        :param reward: The reward received after taking the action.
+        :param next_state: The state resulting from the action.
+        :param done: Whether the episode ended after the action.
         """
         if len(self.experience_replay) < N:
-            self.experience_replay.append((states, actions, rewards, next_states))
+            self.experience_replay.append(
+                (state, action, reward, next_state, done)
+            )
         else:
             self.experience_replay.pop(0)
-            self.experience_replay.append((states, actions, rewards, next_states))
+            self.experience_replay.append(
+                (state, action, reward, next_state, done)
+            )
+
+    def sample_experiences(self, batch_size):
+        """Randomly sample a batch of transitions from replay memory."""
+        if len(self.experience_replay) < batch_size:
+            raise ValueError("Not enough experiences to sample this batch")
+
+        batch = random.sample(self.experience_replay, batch_size)
+        states, actions, rewards, next_states, dones = zip(*batch)
+
+        return (
+            np.asarray(states, dtype=np.float32),
+            np.asarray(actions, dtype=np.int32),
+            np.asarray(rewards, dtype=np.float32),
+            np.asarray(next_states, dtype=np.float32),
+            np.asarray(dones, dtype=np.float32),
+        )
+
+    def replay(self, batch_size):
+        """Sample a random batch and train on it when enough data exists."""
+        if len(self.experience_replay) < batch_size:
+            return False
+
+        states, actions, rewards, next_states, dones = (
+            self.sample_experiences(batch_size)
+        )
+        self.train(states, actions, rewards, next_states, dones)
+        self.epsilon = max(
+            self.epsilon_min,
+            self.epsilon * self.epsilon_decay,
+        )
+        return True
 
     def train(self, states, actions, rewards, next_states, d_t):
         """
@@ -74,7 +130,6 @@ class DQN:
         :param next_states: A batch of next states resulting from those actions.
         :param d_t: A batch of boolean values indicating if the episode ended after each action.
         """
-        self.update_experience_replay(states, actions, rewards, next_states)
         # Compute target Q-values
         target_q_values = self.target_network.predict(next_states)
         max_target_q_values = target_q_values.max(axis=1)
