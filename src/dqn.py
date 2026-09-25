@@ -6,10 +6,6 @@ import random
 import keras
 import numpy as np
 
-_GAMMA = 0.99  # Discount factor for future rewards
-N = 100  # Size of the experience replay buffer
-
-
 class DQN:
     """
     Deep Q-Network (DQN) implementation using Keras.
@@ -30,12 +26,32 @@ class DQN:
         4. Action 3: Fire right orientation engine
     """
 
-    def __init__(self, hidden_layers: list[int] = [16], target_update_frequency: int = 100):
+    def __init__(
+        self,
+        hidden_layers: list[int] | None = None,
+        target_update_frequency: int = 100,
+        gamma: float = 0.99,
+        replay_capacity: int = 100,
+        learning_rate: float = 0.001,
+        epsilon_decay: float = 0.995,
+        epsilon_min: float = 0.05,
+        epsilon: float = 1.0,
+    ):
         """
         Initialize the DQN model with the specified hidden layers and target network update frequency.
         :param hidden_layers: A list of integers specifying the number of neurons in each hidden layer.
         :param target_update_frequency: An integer specifying how often to update the target network (in training steps).
         """
+        if hidden_layers is None:
+            hidden_layers = [16]
+
+        self.gamma = gamma
+        self.replay_capacity = replay_capacity
+        self.learning_rate = learning_rate
+        self.epsilon_decay = epsilon_decay
+        self.epsilon_min = epsilon_min
+        self.epsilon = epsilon
+
         self.network = keras.Sequential()
         self.network.add(keras.Input(shape=(8,)))
         for layer in hidden_layers:
@@ -43,7 +59,7 @@ class DQN:
             self.network.add(keras.layers.ReLU())
         self.network.add(keras.layers.Dense(4))
         self.network.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=0.001),
+            optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
             loss=keras.losses.Huber(),
         )
 
@@ -52,9 +68,6 @@ class DQN:
         self.target_update_frequency = target_update_frequency
         self.train_steps = 0
         self.experience_replay = []
-        self.epsilon = 1.0
-        self.epsilon_min = 0.05
-        self.epsilon_decay = 0.995
 
     def choose_action(self, state):
         """Choose a random action or the action with the highest Q-value."""
@@ -79,7 +92,7 @@ class DQN:
         :param next_state: The state resulting from the action.
         :param done: Whether the episode ended after the action.
         """
-        if len(self.experience_replay) < N:
+        if len(self.experience_replay) < self.replay_capacity:
             self.experience_replay.append(
                 (state, action, reward, next_state, done)
             )
@@ -133,7 +146,7 @@ class DQN:
         # Compute target Q-values
         target_q_values = self.target_network.predict(next_states)
         max_target_q_values = target_q_values.max(axis=1)
-        targets = rewards + (1 - d_t) * _GAMMA * max_target_q_values
+        targets = rewards + (1 - d_t) * self.gamma * max_target_q_values
 
         # Create a mask for the actions taken
         action_masks = keras.utils.to_categorical(actions, num_classes=4)

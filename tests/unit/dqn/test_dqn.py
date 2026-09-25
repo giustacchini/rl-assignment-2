@@ -4,7 +4,7 @@
 import numpy as np
 import pytest
 
-from dqn import DQN, N
+from dqn import DQN
 
 def test_default_dqn_input_layer_matches_state_space_dimensionality():
     dqn = DQN()
@@ -53,13 +53,21 @@ def test_replay_buffer_stores_complete_transition():
 
 
 def test_replay_buffer_does_not_exceed_capacity():
-    dqn = DQN()
+    capacity = 4
+    dqn = DQN(replay_capacity=capacity)
 
-    for index in range(N + 1):
+    for index in range(capacity + 1):
         dqn.update_experience_replay(*make_transition(index))
 
-    assert len(dqn.experience_replay) == N
+    assert len(dqn.experience_replay) == capacity
     assert dqn.experience_replay[0][0][0] == 1
+
+
+def test_dqn_accepts_training_parameters():
+    dqn = DQN(gamma=0.95, replay_capacity=32)
+
+    assert dqn.gamma == 0.95
+    assert dqn.replay_capacity == 32
 
 
 def test_sample_experiences_returns_requested_batch_shapes():
