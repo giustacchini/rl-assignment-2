@@ -118,21 +118,6 @@ class DQN:
             np.asarray(dones, dtype=np.float32),
         )
 
-    def replay(self, batch_size):
-        """Sample a random batch and train on it when enough data exists."""
-        if len(self.experience_replay) < batch_size:
-            return False
-
-        states, actions, rewards, next_states, dones = (
-            self.sample_experiences(batch_size)
-        )
-        self.train(states, actions, rewards, next_states, dones)
-        self.epsilon = max(
-            self.epsilon_min,
-            self.epsilon * self.epsilon_decay,
-        )
-        return True
-
     def train(self, states, actions, rewards, next_states, d_t):
         """
         Train the DQN model using the provided experience replay data and a target network.
@@ -163,3 +148,8 @@ class DQN:
         self.train_steps += 1
         if self.train_steps % self.target_update_frequency == 0:
             self.update_target_network()
+
+        self.epsilon = max(
+                    self.epsilon_min,
+                    self.epsilon * self.epsilon_decay,
+                )

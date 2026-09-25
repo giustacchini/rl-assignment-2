@@ -95,7 +95,7 @@ def test_sample_experiences_rejects_undersized_buffer():
         dqn.sample_experiences(1)
 
 
-def test_replay_trains_and_decays_epsilon():
+def test_train_trains_and_decays_epsilon():
     dqn = DQN()
     batch_size = 8
 
@@ -103,17 +103,21 @@ def test_replay_trains_and_decays_epsilon():
         dqn.update_experience_replay(*make_transition(index))
 
     initial_epsilon = dqn.epsilon
+    batch = dqn.sample_experiences(batch_size)
 
-    assert dqn.replay(batch_size) is True
+    dqn.train(*batch)
+
     assert dqn.train_steps == 1
     assert dqn.epsilon < initial_epsilon
     assert dqn.epsilon >= dqn.epsilon_min
 
 
-def test_replay_skips_training_until_batch_is_available():
+def test_sample_experiences_rejects_batch_before_training():
     dqn = DQN()
 
-    assert dqn.replay(1) is False
+    with pytest.raises(ValueError):
+        dqn.sample_experiences(1)
+
     assert dqn.train_steps == 0
 
 

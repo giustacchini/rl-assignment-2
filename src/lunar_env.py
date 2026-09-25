@@ -53,7 +53,9 @@ def main():
             next_state,
             done,
         )
-        dqn.replay(args.batch_size)
+        if len(dqn.experience_replay) >= args.batch_size:
+            states, actions, rewards, next_states, dones = dqn.sample_experiences(batch_size=args.batch_size)
+            dqn.train(states, actions, rewards, next_states, dones)
         state = next_state
 
         if done:
