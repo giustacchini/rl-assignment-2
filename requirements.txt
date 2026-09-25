@@ -1,6 +1,5 @@
 pytest
 pytest-cov
 gymnasium[box2d]
-gymnasium
 keras
 tensorflow
