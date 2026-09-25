@@ -2,4 +2,4 @@ pytest
 pytest-cov
 gymnasium[box2d]
 keras
-tensorflow[and-cuda]
+tensorflow
