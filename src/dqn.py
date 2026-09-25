@@ -129,7 +129,7 @@ class DQN:
         :param d_t: A batch of boolean values indicating if the episode ended after each action.
         """
         # Compute target Q-values
-        target_q_values = self.target_network.predict(next_states)
+        target_q_values = self.target_network.predict(next_states, verbose=None)
         max_target_q_values = target_q_values.max(axis=1)
         targets = rewards + (1 - d_t) * self.gamma * max_target_q_values
 
@@ -137,13 +137,13 @@ class DQN:
         action_masks = keras.utils.to_categorical(actions, num_classes=4)
 
         # Compute the predicted Q-values for the current states
-        predicted_q_values = self.network.predict(states)
+        predicted_q_values = self.network.predict(states, verbose=None)
 
         # Update only the Q-values for the actions taken
         predicted_q_values[action_masks.astype(bool)] = targets
 
         # Train the network on the updated Q-values
-        self.network.fit(states, predicted_q_values, epochs=1, verbose=0)
+        self.network.fit(states, predicted_q_values, epochs=1, verbose=None)
 
         self.train_steps += 1
         if self.train_steps % self.target_update_frequency == 0:
