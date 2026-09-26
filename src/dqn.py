@@ -83,23 +83,25 @@ class DQN:
         """Copy the online network weights to the target network."""
         self.target_network.set_weights(self.network.get_weights())
 
-    def update_experience_replay(self, state, action, reward, next_state, done):
+    def update_experience_replay(
+        self, state, action, reward, next_state, terminated
+    ):
         """
         Store one transition in the experience replay buffer.
         :param state: The state before taking the action.
         :param action: The action taken in the state.
         :param reward: The reward received after taking the action.
         :param next_state: The state resulting from the action.
-        :param done: Whether the episode ended after the action.
+        :param terminated: Whether the environment reached a terminal state.
         """
         if len(self.experience_replay) < self.replay_capacity:
             self.experience_replay.append(
-                (state, action, reward, next_state, done)
+                (state, action, reward, next_state, terminated)
             )
         else:
             self.experience_replay.pop(0)
             self.experience_replay.append(
-                (state, action, reward, next_state, done)
+                (state, action, reward, next_state, terminated)
             )
 
     def sample_experiences(self, batch_size):
@@ -108,17 +110,17 @@ class DQN:
             raise ValueError("Not enough experiences to sample this batch")
 
         batch = random.sample(self.experience_replay, batch_size)
-        states, actions, rewards, next_states, dones = zip(*batch)
+        states, actions, rewards, next_states, terminateds = zip(*batch)
 
         return (
             np.asarray(states, dtype=np.float32),
             np.asarray(actions, dtype=np.int32),
             np.asarray(rewards, dtype=np.float32),
             np.asarray(next_states, dtype=np.float32),
-            np.asarray(dones, dtype=np.float32),
+            np.asarray(terminateds, dtype=np.float32),
         )
 
-    def train(self, states, actions, rewards, next_states, d_t):
+    def train(self, states, actions, rewards, next_states, terminateds):
         """
         Train the DQN model using the provided experience replay data and a target network.
 
@@ -126,12 +128,12 @@ class DQN:
         :param actions: A batch of actions taken in those states.
         :param rewards: A batch of rewards received after taking those actions.
         :param next_states: A batch of next states resulting from those actions.
-        :param d_t: A batch of boolean values indicating if the episode ended after each action.
+        :param terminateds: A batch indicating which transitions reached terminal states.
         """
         # Compute target Q-values
         target_q_values = self.target_network.predict(next_states)
         max_target_q_values = target_q_values.max(axis=1)
-        targets = rewards + (1 - d_t) * self.gamma * max_target_q_values
+        targets = rewards + (1 - terminateds) * self.gamma * max_target_q_values
 
         # Create a mask for the actions taken
         action_masks = keras.utils.to_categorical(actions, num_classes=4)

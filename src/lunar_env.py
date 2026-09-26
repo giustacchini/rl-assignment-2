@@ -44,21 +44,21 @@ def main():
         action = dqn.choose_action(state)
         current_state = state
         next_state, reward, terminated, truncated, info = env.step(action)
-        done = terminated or truncated
+        episode_done = terminated or truncated
 
         dqn.update_experience_replay(
             current_state,
             action,
             reward,
             next_state,
-            done,
+            terminated,
         )
         if len(dqn.experience_replay) >= args.batch_size:
             states, actions, rewards, next_states, dones = dqn.sample_experiences(batch_size=args.batch_size)
             dqn.train(states, actions, rewards, next_states, dones)
         state = next_state
 
-        if done:
+        if episode_done:
             state, info = env.reset()
 
     env.close()
