@@ -47,15 +47,25 @@ def main():
     state, info = env.reset()
 
     episode_returns = []
-    episode_counter = 1
+    episode_fuel_consumptions = []
+    episode_successes = []
+    episode_landing_errors = []
 
+    episode_counter = 1
     episode_return = 0
+    episode_fuel_consumption = 0
 
     for _ in range(args.steps):
         action = dqn.choose_action(state)
         current_state = state
         next_state, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
+
+        # Track fuel consumption for the current episode
+        if action == 2:
+            episode_fuel_consumption += 0.3
+        elif action in (1, 3):
+            episode_fuel_consumption += 0.03
 
         episode_return += reward
 
@@ -75,15 +85,39 @@ def main():
 
         if done:
             episode_returns.append(episode_return)
+            episode_fuel_consumptions.append(episode_fuel_consumption)
+            episode_successes.append(reward == 100)
+
+            # Measure distance from the center for successful landings
+            if reward == 100:
+                episode_landing_errors.append(abs(next_state[0]))
             average_return = sum(episode_returns[-100:]) / len(episode_returns[-100:])
             print(
                 f"Episode {episode_counter}: return = {episode_return}, average = {average_return}, epsilon = {dqn.epsilon}"
             )
             episode_counter += 1
             episode_return = 0
+            episode_fuel_consumption = 0
             state, info = env.reset()
 
     env.close()
+
+    # Calculate evaluation metrics for the whole training run
+    average_fuel_consumption = (
+        sum(episode_fuel_consumptions) / len(episode_fuel_consumptions)
+        if episode_fuel_consumptions
+        else 0
+    )
+    success_rate = (
+        sum(episode_successes) / len(episode_successes)
+        if episode_successes
+        else 0
+    )
+    average_landing_error = (
+        sum(episode_landing_errors) / len(episode_landing_errors)
+        if episode_landing_errors
+        else None
+    )
 
     # save model and metric here using model.save()  
     project_location = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -104,7 +138,13 @@ def main():
             "target_update_frequency": args.target_update_frequency
         },
         "episode_returns": episode_returns,
-        "final_epsilon": dqn.epsilon
+        "final_epsilon": dqn.epsilon,
+        "episode_fuel_consumptions": episode_fuel_consumptions,
+        "average_fuel_consumption": average_fuel_consumption,
+        "episode_successes": episode_successes,
+        "success_rate": success_rate,
+        "episode_landing_errors": episode_landing_errors,
+        "average_landing_error": average_landing_error,
     }
     with open(f"results/{project_location}/metrics.json", "w") as f:
         f.write(json.dumps(metrics, indent=4))
