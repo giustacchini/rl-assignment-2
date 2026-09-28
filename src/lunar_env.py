@@ -5,7 +5,9 @@
 import os
 import json
 import argparse
+import keras
 import gymnasium as gym
+import pickle as pkl
 from datetime import datetime
 
 from dqn import DQN
@@ -23,10 +25,17 @@ def parse_args():
     parser.add_argument("--target-update-frequency", type=int, default=100)
     parser.add_argument("--steps", type=int, default=500)
     parser.add_argument("--render", action="store_true")
+    parser.add_argument("--checkpoint-frequency", type=int, default=10000)
+    parser.add_argument("--resume", default=None)
     return parser.parse_args()
 
 
 def main():
+    # save model and metric here using model.save()  
+    project_location = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    os.makedirs(f"results/{project_location}", exist_ok=True)
+
     args = parse_args()
 
     if args.batch_size > args.replay_capacity:
@@ -44,6 +53,8 @@ def main():
         epsilon_min=args.epsilon_min,
     )
 
+    initial_step = 1
+
     state, info = env.reset()
 
     episode_returns = []
@@ -51,11 +62,23 @@ def main():
 
     episode_return = 0
 
-    for _ in range(args.steps):
+    if args.resume is not None:
+        with open(f"{args.resume}/training_state.pkl", "rb") as f:
+            loaded = pkl.load(f)
+        initial_step = loaded["step"] + 1
+        dqn.network = keras.saving.load_model(f"{args.resume}/training_model.keras")
+        dqn.target_network = keras.saving.load_model(f"{args.resume}/target_network.keras")
+        dqn.epsilon = loaded["epsilon"]
+        dqn.experience_replay = loaded["experience_replay"]
+        dqn.train_steps = loaded["train_steps"]
+        episode_returns = loaded["episode_returns"]
+        episode_counter = loaded["episode_counter"]
+
+    for step in range(initial_step, args.steps + 1):
         action = dqn.choose_action(state)
         current_state = state
         next_state, reward, terminated, truncated, info = env.step(action)
-        done = terminated or truncated
+        episode_done = terminated or truncated
 
         episode_return += reward
 
@@ -64,16 +87,14 @@ def main():
             action,
             reward,
             next_state,
-            done,
+            terminated, 
         )
         if len(dqn.experience_replay) >= args.batch_size:
             states, actions, rewards, next_states, dones = dqn.sample_experiences(batch_size=args.batch_size)
             dqn.train(states, actions, rewards, next_states, dones)
         state = next_state
 
-
-
-        if done:
+        if episode_done:
             episode_returns.append(episode_return)
             average_return = sum(episode_returns[-100:]) / len(episode_returns[-100:])
             print(
@@ -83,12 +104,32 @@ def main():
             episode_return = 0
             state, info = env.reset()
 
+        if step % args.checkpoint_frequency == 0:
+            temp_location = f"results/{project_location}/checkpoint_{step}"
+            os.makedirs(temp_location, exist_ok=True)
+            dqn.network.save(f"{temp_location}/training_model.keras")
+            dqn.target_network.save(f"{temp_location}/target_network.keras")
+            with open(f"{temp_location}/training_state.pkl", "wb") as f:
+                pkl.dump({
+                    "experience_replay": dqn.experience_replay,
+                    "epsilon": dqn.epsilon,
+                    "train_steps": dqn.train_steps,
+                    "step": step,
+                    "episode_returns": episode_returns,
+                    "episode_counter": episode_counter
+                }, f)
+            metrics = {
+                "epsilon": dqn.epsilon,
+                "train_steps": dqn.train_steps,
+                "step": step,
+                "episode_return": episode_return,
+                "episode_counter": episode_counter
+            }
+            with open(f"{temp_location}/metrics.json", "w") as f:
+                f.write(json.dumps(metrics, indent=4))    
+
     env.close()
 
-    # save model and metric here using model.save()  
-    project_location = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-    os.makedirs(f"results/{project_location}", exist_ok=True)
     dqn.network.save(f"results/{project_location}/training_model.keras")
 
     metrics = {
@@ -106,7 +147,7 @@ def main():
         "episode_returns": episode_returns,
         "final_epsilon": dqn.epsilon
     }
-    with open(f"results/{project_location}/metrics.json", "w") as f:
+    with open(f"results/{project_location}/final_metrics.json", "w") as f:
         f.write(json.dumps(metrics, indent=4))
 
 

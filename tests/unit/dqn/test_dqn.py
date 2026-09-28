@@ -35,10 +35,10 @@ def test_dqn_hidden_layer_argument_produces_expected_architecture():
     assert dqn_custom_hidden_layer.network.layers[3].input.shape[1] == 16
 
 
-def make_transition(index=0, done=False):
+def make_transition(index=0, terminated=False):
     state = np.full(8, index, dtype=np.float32)
     next_state = np.full(8, index + 1, dtype=np.float32)
-    return state, index % 4, float(index), next_state, done
+    return state, index % 4, float(index), next_state, terminated
 
 
 def test_replay_buffer_stores_complete_transition():
