@@ -58,12 +58,14 @@ def main():
     state, info = env.reset()
 
     episode_returns = []
+    episode_steps = []
     episode_fuel_consumptions = []
     episode_successes = []
     episode_landing_errors = []
 
     episode_counter = 1
     episode_return = 0
+    current_episode_steps = 0
     episode_fuel_consumption = 0
 
     if args.resume is not None:
@@ -76,7 +78,9 @@ def main():
         dqn.experience_replay = loaded["experience_replay"]
         dqn.train_steps = loaded["train_steps"]
         episode_returns = loaded["episode_returns"]
+        episode_steps = loaded.get("episode_steps", [])
         episode_counter = loaded["episode_counter"]
+        current_episode_steps = loaded.get("current_episode_steps", 0)
         episode_fuel_consumptions = loaded["episode_fuel_consumptions"]
         episode_successes = loaded["episode_successes"]
         episode_landing_errors = loaded["episode_landing_errors"]
@@ -86,6 +90,7 @@ def main():
         current_state = state
         next_state, reward, terminated, truncated, info = env.step(action)
         episode_done = terminated or truncated
+        current_episode_steps += 1
 
         # Track fuel consumption for the current episode
         if action == 2:
@@ -109,6 +114,7 @@ def main():
 
         if episode_done:
             episode_returns.append(episode_return)
+            episode_steps.append(current_episode_steps)
             episode_fuel_consumptions.append(episode_fuel_consumption)
             episode_successes.append(reward == 100)
 
@@ -121,6 +127,7 @@ def main():
             )
             episode_counter += 1
             episode_return = 0
+            current_episode_steps = 0
             episode_fuel_consumption = 0
             state, info = env.reset()
 
@@ -136,6 +143,8 @@ def main():
                     "train_steps": dqn.train_steps,
                     "step": step,
                     "episode_returns": episode_returns,
+                    "episode_steps": episode_steps,
+                    "current_episode_steps": current_episode_steps,
                     "episode_counter": episode_counter,
                     "episode_fuel_consumptions": episode_fuel_consumptions,
                     "episode_successes": episode_successes,
@@ -185,6 +194,7 @@ def main():
             "target_update_frequency": args.target_update_frequency
         },
         "episode_returns": episode_returns,
+        "episode_steps": episode_steps,
         "final_epsilon": dqn.epsilon,
         "episode_fuel_consumptions": episode_fuel_consumptions,
         "average_fuel_consumption": average_fuel_consumption,
