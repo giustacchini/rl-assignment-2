@@ -14,6 +14,6 @@ nvidia-smi
 
 echo "now processing task id:: ${SLURM_JOB_ID} on ${SLURMD_NODENAME}"
 mkdir "log_${SLURM_JOB_ID}"
-python3 src/lunar_env.py > output_${SLURM_JOB_ID}.txt 2>&1
+python3 -u src/lunar_env.py > output_${SLURM_JOB_ID}.txt 2>&1
 
 echo "Finished task ${SLURM_JOB_ID:-local}"
