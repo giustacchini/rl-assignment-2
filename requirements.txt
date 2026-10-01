@@ -1,6 +1,5 @@
 pytest
-gymnasium
-numpy
-pandas
-matplotlib
 pytest-cov
+gymnasium[box2d]
+keras
+tensorflow
