@@ -6,6 +6,7 @@ import random
 import keras
 import numpy as np
 
+
 class DQN:
     """
     Deep Q-Network (DQN) implementation using Keras.
@@ -83,9 +84,7 @@ class DQN:
         """Copy the online network weights to the target network."""
         self.target_network.set_weights(self.network.get_weights())
 
-    def update_experience_replay(
-        self, state, action, reward, next_state, terminated
-    ):
+    def update_experience_replay(self, state, action, reward, next_state, terminated):
         """
         Store one transition in the experience replay buffer.
         :param state: The state before taking the action.
@@ -95,14 +94,10 @@ class DQN:
         :param terminated: Whether the environment reached a terminal state.
         """
         if len(self.experience_replay) < self.replay_capacity:
-            self.experience_replay.append(
-                (state, action, reward, next_state, terminated)
-            )
+            self.experience_replay.append((state, action, reward, next_state, terminated))
         else:
             self.experience_replay.pop(0)
-            self.experience_replay.append(
-                (state, action, reward, next_state, terminated)
-            )
+            self.experience_replay.append((state, action, reward, next_state, terminated))
 
     def sample_experiences(self, batch_size):
         """Randomly sample a batch of transitions from replay memory."""
@@ -152,6 +147,6 @@ class DQN:
             self.update_target_network()
 
         self.epsilon = max(
-                    self.epsilon_min,
-                    self.epsilon * self.epsilon_decay,
-                )
+            self.epsilon_min,
+            self.epsilon * self.epsilon_decay,
+        )
