@@ -28,7 +28,7 @@ Explain the concept of the target network in DQN. How does it help to stabilize 
 
 Implement a DQN agent to control a lunar lander, aiming to land it safely on the lunar surface while minimizing fuel consumption.
 
-**Environment:** Use the OpenAI Gym `LunarLander-v2` environment. Understand the state space (position,
+**Environment:** Use the OpenAI Gym [LunarLander-v2](https://gymnasium.farama.org/environments/box2d/lunar_lander/) environment. Understand the state space (position,
 velocity, angle, angular velocity, leg contact), action space (main engine, left engine, right engine), and reward
 function (landing pad, penalties for crash, fuel consumption, altitude).
 
