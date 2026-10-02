@@ -5,6 +5,8 @@ import random
 
 import keras
 import numpy as np
+import tensorflow as tf
+
 
 class DQN:
     """
@@ -36,6 +38,7 @@ class DQN:
         epsilon_decay: float = 0.995,
         epsilon_min: float = 0.05,
         epsilon: float = 1.0,
+        decay_episodes: int = 1000,
     ):
         """
         Initialize the DQN model with the specified hidden layers and target network update frequency.
@@ -48,7 +51,8 @@ class DQN:
         self.gamma = gamma
         self.replay_capacity = replay_capacity
         self.learning_rate = learning_rate
-        self.epsilon_decay = epsilon_decay
+        # self.epsilon_decay = epsilon_decay
+        self.epsilon_decay = (epsilon_min / epsilon) ** (1 / decay_episodes)
         self.epsilon_min = epsilon_min
         self.epsilon = epsilon
 
@@ -83,9 +87,7 @@ class DQN:
         """Copy the online network weights to the target network."""
         self.target_network.set_weights(self.network.get_weights())
 
-    def update_experience_replay(
-        self, state, action, reward, next_state, terminated
-    ):
+    def update_experience_replay(self, state, action, reward, next_state, terminated):
         """
         Store one transition in the experience replay buffer.
         :param state: The state before taking the action.
@@ -95,14 +97,10 @@ class DQN:
         :param terminated: Whether the environment reached a terminal state.
         """
         if len(self.experience_replay) < self.replay_capacity:
-            self.experience_replay.append(
-                (state, action, reward, next_state, terminated)
-            )
+            self.experience_replay.append((state, action, reward, next_state, terminated))
         else:
             self.experience_replay.pop(0)
-            self.experience_replay.append(
-                (state, action, reward, next_state, terminated)
-            )
+            self.experience_replay.append((state, action, reward, next_state, terminated))
 
     def sample_experiences(self, batch_size):
         """Randomly sample a batch of transitions from replay memory."""
@@ -110,17 +108,17 @@ class DQN:
             raise ValueError("Not enough experiences to sample this batch")
 
         batch = random.sample(self.experience_replay, batch_size)
-        states, actions, rewards, next_states, terminateds = zip(*batch)
+        states, actions, rewards, next_states, terminated_s = zip(*batch)
 
         return (
             np.asarray(states, dtype=np.float32),
             np.asarray(actions, dtype=np.int32),
             np.asarray(rewards, dtype=np.float32),
             np.asarray(next_states, dtype=np.float32),
-            np.asarray(terminateds, dtype=np.float32),
+            np.asarray(terminated_s, dtype=np.float32),
         )
 
-    def train(self, states, actions, rewards, next_states, terminateds):
+    def train(self, states, actions, rewards, next_states, terminated_s, episode):
         """
         Train the DQN model using the provided experience replay data and a target network.
 
@@ -128,30 +126,52 @@ class DQN:
         :param actions: A batch of actions taken in those states.
         :param rewards: A batch of rewards received after taking those actions.
         :param next_states: A batch of next states resulting from those actions.
-        :param terminateds: A batch indicating which transitions reached terminal states.
+        :param terminated_s: A batch indicating which transitions reached terminal states.
         """
-        # Compute target Q-values
-        target_q_values = self.target_network.predict(next_states, verbose=None)
-        max_target_q_values = target_q_values.max(axis=1)
-        targets = rewards + (1 - terminateds) * self.gamma * max_target_q_values
 
-        # Create a mask for the actions taken
-        action_masks = keras.utils.to_categorical(actions, num_classes=4)
+        # Convert data to TensorFlow tensors
+        states = tf.convert_to_tensor(states, dtype=tf.float32)
+        actions = tf.convert_to_tensor(actions, dtype=tf.int32)
+        rewards = tf.convert_to_tensor(rewards, dtype=tf.float32)
+        next_states = tf.convert_to_tensor(next_states, dtype=tf.float32)
+        terminated_s = tf.convert_to_tensor(terminated_s, dtype=tf.float32)
 
-        # Compute the predicted Q-values for the current states
-        predicted_q_values = self.network.predict(states, verbose=None)
+        # ---------------------------------------------------------
+        # 1. Calculate target Q-values using the target network
+        # ---------------------------------------------------------
+        next_q_values = self.target_network(next_states, training=False)
+        max_next_q_values = tf.reduce_max(next_q_values, axis=1)
+        targets = rewards + (1.0 - terminated_s) * self.gamma * max_next_q_values
 
-        # Update only the Q-values for the actions taken
-        predicted_q_values[action_masks.astype(bool)] = targets
+        # ---------------------------------------------------------
+        # 2. Calculate loss for the online network
+        # ---------------------------------------------------------
+        with tf.GradientTape() as tape:
+            q_values = self.network(states, training=True)
 
-        # Train the network on the updated Q-values
-        self.network.fit(states, predicted_q_values, epochs=1, verbose=None)
+            # Select Q(s,a) for the actions that were actually taken
+            indices = tf.stack([tf.range(tf.shape(actions)[0]), actions], axis=1)
+            selected_q_values = tf.gather_nd(q_values, indices)
 
+            # Huber loss
+            loss = self.network.loss(targets, selected_q_values)
+
+        # ---------------------------------------------------------
+        # 3. Calculate and apply gradients
+        # ---------------------------------------------------------
+        gradients = tape.gradient(loss, self.network.trainable_variables)
+        self.network.optimizer.apply_gradients(zip(gradients, self.network.trainable_variables))
+
+        # ---------------------------------------------------------
+        # 4. Update target network periodically
+        # ---------------------------------------------------------
         self.train_steps += 1
+
         if self.train_steps % self.target_update_frequency == 0:
             self.update_target_network()
 
-        self.epsilon = max(
-                    self.epsilon_min,
-                    self.epsilon * self.epsilon_decay,
-                )
+    def decay_epsilon(self):
+        """
+        Decay the exploration rate (epsilon) for epsilon-greedy action selection.
+        """
+        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)

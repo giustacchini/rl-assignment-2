@@ -34,28 +34,36 @@ function (landing pad, penalties for crash, fuel consumption, altitude).
 
 **Implementing the DQN Agent:**
 
-- Neural Network Architecture: Design a neural network with an appropriate number of layers and neurons. The input layer should match the dimensionality of the state space. The output layer should have the same number of neurons as the number of possible actions.
-- Experience Replay Buffer: Create a circular buffer to store experiences (state, action, reward, next state, done). Randomly sample batches from the buffer for training.
-- Epsilon-Greedy Exploration: implement an epsilon-greedy policy to balance exploration and exploitation. Gradually decrease the epsilon value over time.
-- Target Network: Create a copy of the main Q-network and update it periodically. Use the target network to compute the target Q-values.
+- **Neural Network Architecture:** Design a neural network with an appropriate number of layers and neurons. The input layer should match the dimensionality of the state space. The output layer should have the same number of neurons as the number of possible actions.
+- **Experience Replay Buffer:** Create a circular buffer to store experiences (state, action, reward, next state, done). Randomly sample batches from the buffer for training.
+- **Epsilon-Greedy Exploration:** implement an epsilon-greedy policy to balance exploration and exploitation. Gradually decrease the epsilon value over time.
+- **Target Network:** Create a copy of the main Q-network and update it periodically. Use the target network to compute the target Q-values.
 
 **Steps:**
 
 - Train the DQN agent to successfully land the lunar lander while minimizing fuel consumption.
 - Evaluate the agent’s performance based on success rate, fuel consumption, and landing accuracy.
 - Bonus: visualize the lander’s behavior during training and testing.
-  **Tips:**
+
+**Tips:**
 
 - Handle the continuous action space (e.g., using discretization or actor-critic methods).
 - Address the sparse reward problem (e.g., shaping rewards).
 - Consider the impact of different hyperparameters on performance.
 
-To be exact, students should submit a PDF report, Python/JS code, and visualization. For the PDF report,
-the report should be formated in a similar way to HW 1. In addition, the code used to implement the value
-iteration algorithm. This should be included as a ZIP file with the code, readme file, and requirements.txt with
-all the required library installs. For the visualizations: 1) a clear and informative visualization of the grid world,
-including obstacles, starting state, and goal state; 2) A visualization of the computed value function for each state;
-and 3) A visualization of the optimal policy, indicating the best action for each state
+#### Deliverable
+
+To be exact, students should submit a `PDF report`, `Python/JS code`, and `visualization`.
+
+- For the PDF report, it should be formatted in a similar way to HW 1.
+- The code used to implement the value iteration algorithm. This should be included as a ZIP file with the code, readme file, and requirements.txt with all the required library installs.
+
+**For the visualizations:**
+
+1. A clear and informative visualization of the grid world,
+   including obstacles, starting state, and goal state.
+1. A visualization of the computed value function for each state.
+1. A visualization of the optimal policy, indicating the best action for each state.
 
 ## Project Structure
 
@@ -76,6 +84,9 @@ and 3) A visualization of the optimal policy, indicating the best action for eac
    ```
 
 2. **Install dependencies**
+
+   Run in the project root:
+
    ```bash
    pip install -r requirements.txt
    ```
