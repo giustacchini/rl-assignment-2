@@ -1,17 +1,27 @@
+#%%
 import gymnasium as gym
 import keras 
 import numpy as np
+import matplotlib.pyplot as plt
+
+#%%
 
 env = gym.make("LunarLander-v3")
 
+from pathlib import Path
+
+project_root = Path(__file__).resolve().parent.parent
+
+model_path = project_root / "results" / "checkpoint_30000" / "training_model.keras"
+
 model = keras.models.load_model(
-    "results/20260928_212511/training_model.keras",
+    model_path,
     compile=False
 )
 
 # Evaluation settings
 successful_landings = 0
-num_episodes = 100
+num_episodes = 30
 fuel_consumptions = []
 landing_errors = []
 episode_returns = []
@@ -62,4 +72,107 @@ if average_landing_error is not None:
 else:
     print("Average landing error: No successful landings")
 
+
+# %%
+# Episode returns plot
+episodes = range(1, len(episode_returns) + 1)
+
+plt.figure(figsize=(10, 5))
+plt.plot(episodes, episode_returns, linewidth=2)
+
+plt.xlabel("Episode")
+plt.ylabel("Total Return")
+plt.title("Episode Returns During Evaluation")
+plt.grid(axis="y", alpha=0.2)
+
+plt.tight_layout()
+plt.show()
+
+
+# %%
+# Fuel consumption plot
+episodes = range(1, len(fuel_consumptions) + 1)
+
+plt.figure(figsize=(10, 5))
+plt.plot(episodes, fuel_consumptions, linewidth=2)
+
+plt.xlabel("Episode")
+plt.ylabel("Fuel Consumption")
+plt.title("Fuel Consumption During Evaluation")
+plt.grid(axis="y", alpha=0.2)
+
+plt.tight_layout()
+plt.show()
+
+
+# %%
+# Landing accuracy plot
+if landing_errors:
+    successful_landings_x = range(1, len(landing_errors) + 1)
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(successful_landings_x, landing_errors, linewidth=2)
+
+    plt.xlabel("Successful Landing")
+    plt.ylabel("Landing Error")
+    plt.title("Landing Accuracy During Evaluation")
+    plt.grid(axis="y", alpha=0.2)
+
+    plt.tight_layout()
+    plt.show()
+
+
+# %%
+# Success rate plot
+plt.figure(figsize=(6, 5))
+
+plt.bar(["Success Rate"], [success_rate])
+
+plt.ylabel("Success Rate (%)")
+plt.ylim(0, 100)
+plt.title("Evaluation Success Rate")
+plt.grid(axis="y", alpha=0.2)
+
+plt.tight_layout()
+plt.show()
+
+
+# %% 
+# Summary table
+fig, ax = plt.subplots(figsize=(7, 2.5))
+ax.axis("off")
+
+table_data = [
+    ["Success Rate", f"{success_rate:.2f}%"],
+    ["Average Fuel Consumption", f"{average_fuel:.2f}"],
+    [
+        "Average Landing Error",
+        f"{average_landing_error:.4f}"
+        if average_landing_error is not None
+        else "N/A (No successful landings)"
+    ]
+]
+
+table = ax.table(
+    cellText=table_data,
+    colLabels=["Metric", "Result"],
+    cellLoc="center",
+    loc="center"
+)
+
+table.auto_set_font_size(False)
+table.set_fontsize(10)
+table.scale(1, 1.5)
+
+for col in range(2):
+    table[(0, col)].set_text_props(weight="bold")
+    table[(0, col)].set_facecolor("aliceblue")
+
+plt.title("Evaluation Summary", fontsize=13, weight="bold", pad=10)
+
+plt.tight_layout()
+plt.show()
+
+
 env.close()
+# %%
