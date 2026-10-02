@@ -11,6 +11,7 @@ def parse_args():
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--epsilon-decay", type=float, default=0.995)
     parser.add_argument("--epsilon-min", type=float, default=0.05)
+    parser.add_argument("--decay-episodes", type=int, default=1000)
     parser.add_argument("--replay-capacity", type=int, default=10_000)
     parser.add_argument("--target-update-frequency", type=int, default=100)
 
