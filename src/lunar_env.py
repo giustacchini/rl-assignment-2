@@ -1,15 +1,13 @@
 # lunar_env.py
 
-import json
-import os
 import pickle as pkl
-from datetime import datetime
 
 import gymnasium as gym
 import keras
 
+import Logger
 from dqn import DQN
-from Logger import save_checkpoint, save_final_metrics
+from Logger import Logger
 from setup import parse_args
 
 
@@ -19,10 +17,7 @@ def main():
     if args.batch_size > args.replay_capacity:
         raise ValueError("batch-size cannot be larger than replay-capacity")
 
-    project_location = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_location = f"results/{project_location}"
-
-    os.makedirs(results_location, exist_ok=True)
+    logger = Logger()
 
     render_mode = "human" if args.render else None
 
@@ -39,6 +34,7 @@ def main():
         learning_rate=args.learning_rate,
         epsilon_decay=args.epsilon_decay,
         epsilon_min=args.epsilon_min,
+        decay_episodes=args.decay_episodes,
     )
 
     # Training history
@@ -60,7 +56,6 @@ def main():
             loaded = pkl.load(f)
 
         dqn.network = keras.saving.load_model(f"{args.resume}/training_model.keras")
-
         dqn.target_network = keras.saving.load_model(f"{args.resume}/target_network.keras")
 
         dqn.epsilon = loaded["epsilon"]
@@ -83,10 +78,7 @@ def main():
     # Episode training loop
     # -------------------------
 
-    for episode in range(
-        initial_episode,
-        args.episodes + 1,
-    ):
+    for episode in range(initial_episode, args.episodes + 1):
         state, info = env.reset()
 
         episode_return = 0.0
@@ -94,7 +86,7 @@ def main():
 
         episode_done = False
 
-        while not episode_done:
+        while not episode_done:  # Updates for each step in the episode
             action = dqn.choose_action(state)
 
             current_state = state
@@ -137,35 +129,29 @@ def main():
                 terminated,
             )
 
-            # Train once enough experiences exist.
+            # Train once enough experiences exist, and then train every step.
             if len(dqn.experience_replay) >= args.batch_size:
-                (
-                    states,
-                    actions,
-                    rewards,
-                    next_states,
-                    terminateds,
-                ) = dqn.sample_experiences(batch_size=args.batch_size)
+                states, actions, rewards, next_states, terminated_s = dqn.sample_experiences(batch_size=args.batch_size)
 
-                dqn.train(
-                    states,
-                    actions,
-                    rewards,
-                    next_states,
-                    terminateds,
-                )
+                dqn.train(states, actions, rewards, next_states, terminated_s, episode)
 
             state = next_state
+
+            # print(
+            #     f"Episode {episode}: "
+            #     f"steps = {global_step}, "
+            #     f"return = {episode_return:.2f}, "
+            #     # f"average = {average_return:.2f}, "
+            #     f"fuel = {episode_fuel_consumption:.2f}, "
+            #     f"epsilon = {dqn.epsilon:.4f}"
+            # )
 
             # -------------------------
             # Checkpoint every N steps
             # -------------------------
 
             if args.checkpoint_frequency > 0 and global_step % args.checkpoint_frequency == 0:
-                checkpoint_location = f"{results_location}/" f"checkpoint_{global_step}"
-
-                save_checkpoint(
-                    checkpoint_location,
+                logger.save_checkpoint(
                     dqn,
                     global_step,
                     episode,
@@ -178,7 +164,7 @@ def main():
         # -------------------------
         # Episode finished
         # -------------------------
-
+        dqn.decay_epsilon()
         episode_returns.append(float(episode_return))
 
         episode_fuel_consumptions.append(float(episode_fuel_consumption))
@@ -192,13 +178,13 @@ def main():
 
         average_return = sum(episode_returns[-100:]) / len(episode_returns[-100:])
 
-        print(
-            f"Episode {episode}: "
-            f"steps = {global_step}, "
-            f"return = {episode_return:.2f}, "
-            f"average = {average_return:.2f}, "
-            f"fuel = {episode_fuel_consumption:.2f}, "
-            f"epsilon = {dqn.epsilon:.4f}"
+        logger.print_episode(
+            episode,
+            global_step,
+            episode_return,
+            average_return,
+            episode_fuel_consumption,
+            dqn.epsilon,
         )
 
     env.close()
@@ -207,9 +193,7 @@ def main():
     # Save final model
     # -------------------------
 
-    dqn.network.save(f"{results_location}/training_model.keras")
-
-    dqn.target_network.save(f"{results_location}/target_network.keras")
+    logger.save_networks(dqn.network, dqn.target_network)
 
     # -------------------------
     # Final aggregate metrics
@@ -225,9 +209,8 @@ def main():
         sum(episode_landing_errors) / len(episode_landing_errors) if episode_landing_errors else None
     )
 
-    save_final_metrics(
+    logger.save_final_metrics(
         args,
-        results_location,
         global_step,
         episode_returns,
         dqn.epsilon,

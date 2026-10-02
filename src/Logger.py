@@ -1,100 +1,144 @@
 import json
 import os
 import pickle as pkl
+from datetime import datetime
 
 
-def save_checkpoint(
-    checkpoint_location,
-    dqn,
-    global_step,
-    episode,
-    episode_returns,
-    episode_fuel_consumptions,
-    episode_successes,
-    episode_landing_errors,
-):
-    os.makedirs(checkpoint_location, exist_ok=True)
+class Logger:
 
-    dqn.network.save(f"{checkpoint_location}/training_model.keras")
+    def __init__(self):
+        run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.results_location = f"results/{run_timestamp}"
+        os.makedirs(self.results_location, exist_ok=True)
 
-    dqn.target_network.save(f"{checkpoint_location}/target_network.keras")
+    @staticmethod
+    def print_episode(self, episode, global_step, episode_return, average_return, episode_fuel_consumption, epsilon):
+        run_timestamp = datetime.now().strftime("[%Y-%m-%d][%H:%M:%S]")
+        episode_info_str = (
+            f"{run_timestamp} "
+            f"Episode {episode} - "
+            f"Steps = {global_step}, "
+            f"Return = {episode_return:.2f}, "
+            f"Average_Return = {average_return:.2f}, "
+            f"Fuel = {episode_fuel_consumption:.2f}, "
+            f"Epsilon = {epsilon:.4f}"
+        )
+        print(episode_info_str)
 
-    training_state = {
-        "experience_replay": dqn.experience_replay,
-        "epsilon": dqn.epsilon,
-        "train_steps": dqn.train_steps,
-        "global_step": global_step,
-        "episode": episode,
-        "episode_returns": episode_returns,
-        "episode_fuel_consumptions": episode_fuel_consumptions,
-        "episode_successes": episode_successes,
-        "episode_landing_errors": episode_landing_errors,
-    }
+        with open(f"{self.results_location}/full_training_log.txt", "a") as f:
+            f.write(episode_info_str + "\n")
 
-    with open(
-        f"{checkpoint_location}/training_state.pkl",
-        "wb",
-    ) as f:
-        pkl.dump(training_state, f)
+    def save_checkpoint(
+        self,
+        dqn,
+        global_step,
+        episode,
+        episode_returns,
+        episode_fuel_consumptions,
+        episode_successes,
+        episode_landing_errors,
+    ):
+        checkpoint_location = f"{self.results_location}/" f"checkpoint_{global_step}"
+        os.makedirs(checkpoint_location, exist_ok=True)
 
-    checkpoint_metrics = {
-        "global_step": global_step,
-        "episode": episode,
-        "epsilon": dqn.epsilon,
-        "train_steps": dqn.train_steps,
-        "completed_episodes": len(episode_returns),
-    }
+        dqn.network.save(f"{checkpoint_location}/training_model.keras")
+        dqn.target_network.save(f"{checkpoint_location}/target_network.keras")
 
-    with open(
-        f"{checkpoint_location}/metrics.json",
-        "w",
-    ) as f:
-        json.dump(checkpoint_metrics, f, indent=4)
+        training_state = {
+            "experience_replay": dqn.experience_replay,
+            "epsilon": dqn.epsilon,
+            "train_steps": dqn.train_steps,
+            "global_step": global_step,
+            "episode": episode,
+            "episode_returns": episode_returns,
+            "episode_fuel_consumptions": episode_fuel_consumptions,
+            "episode_successes": episode_successes,
+            "episode_landing_errors": episode_landing_errors,
+        }
 
+        with open(
+            f"{checkpoint_location}/training_state.pkl",
+            "wb",
+        ) as f:
+            pkl.dump(training_state, f)
 
-def save_final_metrics(
-    args,
-    results_location,
-    global_step,
-    episode_returns,
-    epsilon,
-    episode_fuel_consumptions,
-    average_fuel_consumption,
-    episode_successes,
-    episode_landing_errors,
-    success_rate,
-    average_landing_error,
-):
-    # -------------------------
-    # Save final metrics
-    # -------------------------
+        checkpoint_metrics = {
+            "global_step": global_step,
+            "episode": episode,
+            "epsilon": dqn.epsilon,
+            "train_steps": dqn.train_steps,
+            "completed_episodes": len(episode_returns),
+        }
 
-    metrics = {
-        "configuration": {
-            "episodes": args.episodes,
-            "batch_size": args.batch_size,
-            "hidden_layers": args.hidden_layers,
-            "learning_rate": args.learning_rate,
-            "gamma": args.gamma,
-            "epsilon_decay": args.epsilon_decay,
-            "epsilon_min": args.epsilon_min,
-            "replay_capacity": args.replay_capacity,
-            "target_update_frequency": args.target_update_frequency,
-            "checkpoint_frequency": args.checkpoint_frequency,
-        },
-        "total_environment_steps": global_step,
-        "episode_returns": episode_returns,
-        "final_epsilon": epsilon,
-        "episode_fuel_consumptions": episode_fuel_consumptions,
-        "average_fuel_consumption": average_fuel_consumption,
-        "episode_successes": episode_successes,
-        "success_rate": success_rate,
-        "episode_landing_errors": episode_landing_errors,
-        "average_landing_error": average_landing_error,
-    }
+        with open(
+            f"{checkpoint_location}/metrics.json",
+            "w",
+        ) as f:
+            json.dump(checkpoint_metrics, f, indent=4)
 
-    with open(
-        f"{results_location}/final_metrics.json",
-        "w",
-    ) as f:
-        json.dump(metrics, f, indent=4)
+    def save_final_metrics(
+        self,
+        args,
+        global_step,
+        episode_returns,
+        epsilon,
+        episode_fuel_consumptions,
+        average_fuel_consumption,
+        episode_successes,
+        episode_landing_errors,
+        success_rate,
+        average_landing_error,
+    ):
+        # -------------------------
+        # Save final metrics
+        # -------------------------
+
+        metrics = {
+            "configuration": {
+                "episodes": args.episodes,
+                "batch_size": args.batch_size,
+                "hidden_layers": args.hidden_layers,
+                "learning_rate": args.learning_rate,
+                "gamma": args.gamma,
+                "epsilon_decay": args.epsilon_decay,
+                "epsilon_min": args.epsilon_min,
+                "replay_capacity": args.replay_capacity,
+                "target_update_frequency": args.target_update_frequency,
+                "checkpoint_frequency": args.checkpoint_frequency,
+            },
+            "total_environment_steps": global_step,
+            "episode_returns": episode_returns,
+            "final_epsilon": epsilon,
+            "episode_fuel_consumptions": episode_fuel_consumptions,
+            "average_fuel_consumption": average_fuel_consumption,
+            "episode_successes": episode_successes,
+            "success_rate": success_rate,
+            "episode_landing_errors": episode_landing_errors,
+            "average_landing_error": average_landing_error,
+        }
+
+        with open(
+            f"{self.results_location}/final_metrics.json",
+            "w",
+        ) as f:
+            json.dump(metrics, f, indent=4)
+
+    def print_episode(self, episode, global_step, episode_return, average_return, episode_fuel_consumption, epsilon):
+        run_timestamp = datetime.now().strftime("[%Y-%m-%d][%H:%M:%S]")
+        episode_info_str = (
+            f"{run_timestamp} "
+            f"Episode {episode} - "
+            f"steps = {global_step}, "
+            f"return = {episode_return:.2f}, "
+            f"average_return = {average_return:.2f}, "
+            f"fuel = {episode_fuel_consumption:.2f}, "
+            f"epsilon = {epsilon:.4f}"
+        )
+        print(episode_info_str)
+
+        with open(f"{self.results_location}/full_training_log.txt", "a") as f:
+            f.write(episode_info_str + "\n")
+
+    def save_networks(self, network, target_network):
+        network.save(f"{self.results_location}/training_model.keras")
+        target_network.save(f"{self.results_location}/target_network.keras")
