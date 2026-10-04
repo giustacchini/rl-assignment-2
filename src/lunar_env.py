@@ -28,13 +28,12 @@ def main():
 
     dqn = DQN(
         hidden_layers=args.hidden_layers,
-        target_update_frequency=args.target_update_frequency,
+        tau=args.tau,
         gamma=args.gamma,
         replay_capacity=args.replay_capacity,
         learning_rate=args.learning_rate,
-        epsilon_decay=args.epsilon_decay,
         epsilon_min=args.epsilon_min,
-        decay_episodes=args.decay_episodes,
+        decay_episodes=args.episodes,
     )
 
     # Training history
@@ -170,7 +169,7 @@ def main():
         episode_fuel_consumptions.append(float(episode_fuel_consumption))
 
         # Keep the existing success criterion for now.
-        successful_landing = reward == 100
+        successful_landing = bool(reward == 100)
         episode_successes.append(successful_landing)
 
         if successful_landing:
