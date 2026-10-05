@@ -105,9 +105,13 @@ def test_train_trains_and_decays_epsilon():
     initial_epsilon = dqn.epsilon
     batch = dqn.sample_experiences(batch_size)
 
-    dqn.train(*batch)
+    dqn.train(*batch, episode=1)
 
     assert dqn.train_steps == 1
+    assert dqn.epsilon == initial_epsilon
+
+    dqn.decay_epsilon()
+
     assert dqn.epsilon < initial_epsilon
     assert dqn.epsilon >= dqn.epsilon_min
 

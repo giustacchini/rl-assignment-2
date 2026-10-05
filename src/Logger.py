@@ -93,6 +93,17 @@ class Logger:
         # Save final metrics
         # -------------------------
 
+        episode_returns = [float(value) for value in episode_returns]
+        episode_fuel_consumptions = [float(value) for value in episode_fuel_consumptions]
+        episode_successes = [bool(value) for value in episode_successes]
+        episode_landing_errors = [float(value) for value in episode_landing_errors]
+        epsilon = float(epsilon)
+        average_fuel_consumption = float(average_fuel_consumption)
+        success_rate = float(success_rate)
+        average_landing_error = (
+            None if average_landing_error is None else float(average_landing_error)
+        )
+
         metrics = {
             "configuration": {
                 "episodes": args.episodes,
@@ -100,10 +111,9 @@ class Logger:
                 "hidden_layers": args.hidden_layers,
                 "learning_rate": args.learning_rate,
                 "gamma": args.gamma,
-                "epsilon_decay": args.epsilon_decay,
                 "epsilon_min": args.epsilon_min,
                 "replay_capacity": args.replay_capacity,
-                "target_update_frequency": args.target_update_frequency,
+                "tau": args.tau,
                 "checkpoint_frequency": args.checkpoint_frequency,
             },
             "total_environment_steps": global_step,
@@ -117,11 +127,11 @@ class Logger:
             "average_landing_error": average_landing_error,
         }
 
-        with open(
-            f"{self.results_location}/final_metrics.json",
-            "w",
-        ) as f:
+        metrics_path = f"{self.results_location}/final_metrics.json"
+        temporary_metrics_path = f"{metrics_path}.tmp"
+        with open(temporary_metrics_path, "w", encoding="utf-8") as f:
             json.dump(metrics, f, indent=4)
+        os.replace(temporary_metrics_path, metrics_path)
 
     def print_episode(self, episode, global_step, episode_return, average_return, episode_fuel_consumption, epsilon):
         run_timestamp = datetime.now().strftime("[%Y-%m-%d][%H:%M:%S]")

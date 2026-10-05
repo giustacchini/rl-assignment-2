@@ -31,11 +31,10 @@ class DQN:
     def __init__(
         self,
         hidden_layers: list[int] | None = None,
-        target_update_frequency: int = 100,
+        tau: float = 0.005,
         gamma: float = 0.99,
         replay_capacity: int = 100,
         learning_rate: float = 0.001,
-        epsilon_decay: float = 0.995,
         epsilon_min: float = 0.05,
         epsilon: float = 1.0,
         decay_episodes: int = 1000,
@@ -43,7 +42,7 @@ class DQN:
         """
         Initialize the DQN model with the specified hidden layers and target network update frequency.
         :param hidden_layers: A list of integers specifying the number of neurons in each hidden layer.
-        :param target_update_frequency: An integer specifying how often to update the target network (in training steps).
+        :param tau: The target-network Polyak averaging coefficient.
         """
         if hidden_layers is None:
             hidden_layers = [16]
@@ -51,7 +50,6 @@ class DQN:
         self.gamma = gamma
         self.replay_capacity = replay_capacity
         self.learning_rate = learning_rate
-        # self.epsilon_decay = epsilon_decay
         self.epsilon_decay = (epsilon_min / epsilon) ** (1 / decay_episodes)
         self.epsilon_min = epsilon_min
         self.epsilon = epsilon
@@ -63,13 +61,13 @@ class DQN:
             self.network.add(keras.layers.ReLU())
         self.network.add(keras.layers.Dense(4))
         self.network.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+            optimizer=keras.optimizers.AdamW(learning_rate=learning_rate),
             loss=keras.losses.Huber(),
         )
 
         self.target_network = keras.models.clone_model(self.network)
         self.target_network.set_weights(self.network.get_weights())
-        self.target_update_frequency = target_update_frequency
+        self.tau = tau
         self.train_steps = 0
         self.experience_replay = []
 
@@ -84,8 +82,15 @@ class DQN:
         return int(np.argmax(q_values))
 
     def update_target_network(self):
-        """Copy the online network weights to the target network."""
-        self.target_network.set_weights(self.network.get_weights())
+        """Move target-network weights toward online-network weights."""
+        for target_variable, online_variable in zip(
+            self.target_network.weights,
+            self.network.weights,
+        ):
+            target_variable.assign(
+                self.tau * online_variable
+                + (1.0 - self.tau) * target_variable
+            )
 
     def update_experience_replay(self, state, action, reward, next_state, terminated):
         """
@@ -163,12 +168,10 @@ class DQN:
         self.network.optimizer.apply_gradients(zip(gradients, self.network.trainable_variables))
 
         # ---------------------------------------------------------
-        # 4. Update target network periodically
+        # 4. Update target network with Polyak averaging
         # ---------------------------------------------------------
         self.train_steps += 1
-
-        if self.train_steps % self.target_update_frequency == 0:
-            self.update_target_network()
+        self.update_target_network()
 
     def decay_epsilon(self):
         """
