@@ -3,17 +3,30 @@ import gymnasium as gym
 import keras 
 import numpy as np
 import matplotlib.pyplot as plt
-
-#%%
-
-env = gym.make("LunarLander-v3")
-
 from pathlib import Path
 
+#%%
+#Environment setup
+env = gym.make("LunarLander-v3")
+
+#%%
+# Paths
 project_root = Path(__file__).resolve().parent.parent
 
-model_path = project_root / "results" / "checkpoint_30000" / "training_model.keras"
+model_path = (
+    project_root
+    / "results"
+    / "checkpoint_60000"
+    / "training_model.keras"
+)
 
+
+results_dir = model_path.parent
+
+plots_dir = results_dir / "plots"
+plots_dir.mkdir(exist_ok=True)
+
+# %%
 model = keras.models.load_model(
     model_path,
     compile=False
@@ -21,7 +34,7 @@ model = keras.models.load_model(
 
 # Evaluation settings
 successful_landings = 0
-num_episodes = 30
+num_episodes = 600
 fuel_consumptions = []
 landing_errors = []
 episode_returns = []
@@ -54,6 +67,7 @@ for episode in range(num_episodes):
                 landing_errors.append(abs(next_state[0]))
             break
 
+#%%
 # Calculate evaluation results
 average_fuel = np.mean(fuel_consumptions)
 success_rate = (successful_landings / num_episodes) * 100
@@ -63,6 +77,8 @@ if landing_errors:
 else:
     average_landing_error = None
 
+# %%
+# Print results
 print("Evaluation Results")
 print(f"Success rate: {success_rate:.2f}%")
 print(f"Average fuel consumption: {average_fuel:.2f}")
@@ -86,6 +102,11 @@ plt.title("Episode Returns During Evaluation")
 plt.grid(axis="y", alpha=0.2)
 
 plt.tight_layout()
+plt.savefig(plots_dir / "episode_returns.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
 plt.show()
 
 
@@ -102,6 +123,11 @@ plt.title("Fuel Consumption During Evaluation")
 plt.grid(axis="y", alpha=0.2)
 
 plt.tight_layout()
+plt.savefig(
+    plots_dir / "fuel_consumption.png",
+    dpi=300,
+    bbox_inches="tight"
+)
 plt.show()
 
 
@@ -119,6 +145,12 @@ if landing_errors:
     plt.grid(axis="y", alpha=0.2)
 
     plt.tight_layout()
+
+    plt.savefig(
+        plots_dir / "landing_accuracy.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
     plt.show()
 
 
@@ -134,6 +166,13 @@ plt.title("Evaluation Success Rate")
 plt.grid(axis="y", alpha=0.2)
 
 plt.tight_layout()
+
+plt.savefig(
+    plots_dir / "success_rate.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
 plt.show()
 
 
@@ -171,6 +210,13 @@ for col in range(2):
 plt.title("Evaluation Summary", fontsize=13, weight="bold", pad=10)
 
 plt.tight_layout()
+
+plt.savefig(
+    plots_dir / "evaluation_summary.png",
+    dpi=300,
+    bbox_inches="tight"
+)
+
 plt.show()
 
 
