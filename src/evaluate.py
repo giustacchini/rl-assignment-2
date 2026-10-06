@@ -34,7 +34,7 @@ model = keras.models.load_model(
 
 # Evaluation settings
 successful_landings = 0
-num_episodes = 600
+num_episodes = 100
 fuel_consumptions = []
 landing_errors = []
 episode_returns = []
@@ -94,7 +94,7 @@ else:
 episodes = range(1, len(episode_returns) + 1)
 
 plt.figure(figsize=(10, 5))
-plt.plot(episodes, episode_returns, linewidth=2)
+plt.scatter(episodes, episode_returns, s=15)
 
 plt.xlabel("Episode")
 plt.ylabel("Total Return")
@@ -115,7 +115,7 @@ plt.show()
 episodes = range(1, len(fuel_consumptions) + 1)
 
 plt.figure(figsize=(10, 5))
-plt.plot(episodes, fuel_consumptions, linewidth=2)
+plt.scatter(episodes, fuel_consumptions, s=15)
 
 plt.xlabel("Episode")
 plt.ylabel("Fuel Consumption")
@@ -137,7 +137,7 @@ if landing_errors:
     successful_landings_x = range(1, len(landing_errors) + 1)
 
     plt.figure(figsize=(10, 5))
-    plt.plot(successful_landings_x, landing_errors, linewidth=2)
+    plt.scatter(successful_landings_x, landing_errors, s=15)
 
     plt.xlabel("Successful Landing")
     plt.ylabel("Landing Error")
@@ -156,13 +156,19 @@ if landing_errors:
 
 # %%
 # Success rate plot
+
+failure_rate = 100 - success_rate
+
 plt.figure(figsize=(6, 5))
 
-plt.bar(["Success Rate"], [success_rate])
+plt.bar(
+    ["Successful", "Failed"],
+    [success_rate, failure_rate]
+)
 
-plt.ylabel("Success Rate (%)")
+plt.ylabel("Percentage (%)")
 plt.ylim(0, 100)
-plt.title("Evaluation Success Rate")
+plt.title("Evaluation Outcomes: Success vs Failure Rate")
 plt.grid(axis="y", alpha=0.2)
 
 plt.tight_layout()
