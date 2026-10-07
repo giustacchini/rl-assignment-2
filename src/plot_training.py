@@ -4,11 +4,8 @@ import matplotlib.pyplot as plt
 
 project_root = Path(__file__).resolve().parent.parent
 
-metrics_path = (
-    project_root
-    /"results"
-    /"checkpoint_60000"
-    /"final_metrics.json"
+metrics_path = Path(
+    r"C:\AAUni\third-semester\RL\rl-assignment-2\results\20261004_175513\final_metrics.json"
 )
 
 results_dir = metrics_path.parent
@@ -20,11 +17,23 @@ with open(metrics_path, "r") as file:
 
 episode_returns = metrics["episode_returns"]
 
-episodes = range(1,len(episode_returns)+1)
+episodes = range(1, len(episode_returns) + 1)
+rolling_average = [
+    sum(episode_returns[max(0, index - 99): index + 1])
+    / len(episode_returns[max(0, index - 99): index + 1])
+    for index in range(len(episode_returns))
+]
 
 plt.figure(figsize=(10, 5))
 
-plt.plot(episodes, episode_returns, linewidth=2)
+plt.plot(episodes, episode_returns, linewidth=2, label="Episode return")
+plt.plot(
+    episodes,
+    rolling_average,
+    color="red",
+    linewidth=2,
+    label="Average return (last 100 episodes)",
+)
 plt.fill_between(episodes, episode_returns, alpha=0.15)
 
 plt.xlabel("Episode")
@@ -32,6 +41,7 @@ plt.ylabel("Total Return")
 plt.title("Training Learning Curve")
 
 plt.grid(axis="y", alpha=0.3)
+plt.legend()
 
 plt.tight_layout()
 
