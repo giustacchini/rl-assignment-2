@@ -20,6 +20,7 @@
 \usepackage{enumitem}
 \usepackage{subfigure}
 \usepackage[most]{tcolorbox}
+\usepackage{subcaption} 
 
 \usepackage[a4paper, left=2cm, right=2cm]{geometry}
 
@@ -243,6 +244,7 @@
 
 \newpage
 
+
 \section{Theoretical Part}
 
 \subsection{Question 1}
@@ -399,9 +401,112 @@ A simplified DQN training loop with a target network can be described as follows
 
 The main takeaway is that the target network helps to stabilize the learning process by providing a more stable target for the Q-value updates, which reduces the risk of divergence and improves convergence.
 
+\section{Practical Part}
+
+\subsection{Hyperparameter Configuration}
+Through hyperparameter tuning, the optimal grid configuration selected for training the Deep Q-Network (DQN) agent on the Gymnasium \texttt{LunarLander-v2} environment was determined. Table~\ref{tab:hyperparameters} summarizes the hyperparameter settings used during training.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Selected Hyperparameter Configuration for Model Training}
+    \label{tab:hyperparameters}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Hyperparameter} & \textbf{Value} \\
+        \midrule
+        Episodes & 600 \\
+        Batch Size & 128 \\
+        Hidden Layer Architecture & $[64, 64]$ \\
+        Learning Rate ($\alpha$) & $1 \times 10^{-4}$ \\
+        Discount Factor ($\gamma$) & 0.99 \\
+        Minimum Exploration ($\epsilon_{\min}$) & 0.01 \\
+        Replay Buffer Capacity & 10\,000 \\
+        Target Update Soft Parameter ($\tau$) & 0.005 \\
+        Checkpoint Frequency & 25\,000 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Training Dynamics}
+Figure~\ref{fig:training_curve} shows the learning trajectory over 600 episodes. After initial exploration prior to episode 100, the agent demonstrates a consistent increasing trend in cumulative return, indicating effective policy improvement. Around episode 400, performance reaches a temporary plateau with average rewards stabilizing near +200. After that, near episode 500, a shift in trajectory leads to a secondary learning phase, achieving a peak average return near +240 by episode 600.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{training_learning_curve.png}
+    \caption{Training learning curve displaying per-episode returns (blue) and the 100-episode moving average return (red).}
+    \label{fig:training_curve}
+\end{figure}
+
+\subsection{Evaluation and Performance Analysis}
+The trained agent was evaluated across an independent test trial consisting of 100 episodes. The metrics are presented in Figure~\ref{fig:evaluation_grid}.
+
+The evaluation demonstrates an overall success rate of 68.00\% (Figure~\ref{fig:eval_success}) with an average landing error of 0.0504 units (Figure~\ref{fig:eval_summary}). However, some interesting analysis concluded from the performance metrics:
+
+\begin{itemize}
+   
+    \item \textbf{Fuel Consumption vs. Control Strategy:} Figure~\ref{fig:eval_fuel} displays two dominant operational modes: low fuel usage ($\approx 30$--$50$ units) and high fuel usage ($\approx 160$--$180$ units). This suggests that while the agent successfully hovers and lands in 68\% of trials, it occasionally adopts an overly conservative hovering strategy that wastes fuel prior to touchdown, contributing to failing runs.
+
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+
+    % ===================== Row 1: Three graphs =====================
+    \begin{subfigure}{0.32\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{episode_returns.png}
+        \caption{Episode Returns}
+        \label{fig:eval_returns}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.32\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{fuel_consumption.png}
+        \caption{Fuel Consumption}
+        \label{fig:eval_fuel}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.32\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{landing_accuracy.png}
+        \caption{Landing Accuracy}
+        \label{fig:eval_accuracy}
+    \end{subfigure}
+
+    \vspace{0.9em}
+
+    % ===================== Row 2: Two plots =====================
+    \begin{subfigure}{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{evaluation_summary.png}
+        \caption{Evaluation Summary}
+        \label{fig:eval_summary}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{success_rate.png}
+        \caption{Success vs Failure}
+        \label{fig:eval_success}
+    \end{subfigure}
+
+    \caption{Overview of Evaluation Metrics Across All Experiments}
+    \label{fig:evaluation_overview}
+\end{figure}
+
+\subsection{Future Work and Extensions}
+To address the remaining 32\% failure rate and improve trajectory stability, several avenues for future research are identified:
+
+\begin{enumerate}
+    \item \textbf{Extended Training Horizon:} Increasing the total training duration beyond 600 episodes could allow the agent to converge on a more robust policy.
+    
+    \item \textbf{Hyperparameter Optimization:} Systematic grid or Bayesian optimization over learning rates ($\alpha$), target network update rates ($\tau$), and exploration decay profiles ($\epsilon$) could optimize fuel efficiency.
+    
+    \textbf{Reward Function Modification:} Applying a stronger penalty for continuous engine firing could incentivize the agent to avoid high-fuel hovering loops.
+\end{enumerate}
+
 % =========== REFERENCES =========== 
 
 \bibliographystyle{ieeetr}
-\bibliography{rl}
 
 \end{document}
