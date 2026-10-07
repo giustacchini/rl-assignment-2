@@ -9,6 +9,9 @@
 % %%%%%%%%%%%%%%%%%%%%%%%%%%% CUSTOM PACKAGES %%%%%%%%%%%%%%%%%%%%%%%%%%% %
 \usepackage[none]{hyphenat}
 % \usepackage{geometry}
+\usepackage[a4paper, left=2cm, right=2cm]{geometry}
+
+% \usepackage{subcaption}
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{empheq}
@@ -412,17 +415,17 @@ Through hyperparameter tuning, the optimal grid configuration selected for train
     \label{tab:hyperparameters}
     \begin{tabular}{ll}
         \toprule
-        \textbf{Hyperparameter} & \textbf{Value} \\
+        \textbf{Hyperparameter}                 & \textbf{Value}     \\
         \midrule
-        Episodes & 600 \\
-        Batch Size & 128 \\
-        Hidden Layer Architecture & $[64, 64]$ \\
-        Learning Rate ($\alpha$) & $1 \times 10^{-4}$ \\
-        Discount Factor ($\gamma$) & 0.99 \\
-        Minimum Exploration ($\epsilon_{\min}$) & 0.01 \\
-        Replay Buffer Capacity & 10\,000 \\
-        Target Update Soft Parameter ($\tau$) & 0.005 \\
-        Checkpoint Frequency & 25\,000 \\
+        Episodes                                & 600                \\
+        Batch Size                              & 128                \\
+        Hidden Layer Architecture               & $[64, 64]$         \\
+        Learning Rate ($\alpha$)                & $1 \times 10^{-4}$ \\
+        Discount Factor ($\gamma$)              & 0.99               \\
+        Minimum Exploration ($\epsilon_{\min}$) & 0.01               \\
+        Replay Buffer Capacity                  & 10\,000            \\
+        Target Update Soft Parameter ($\tau$)   & 0.005              \\
+        Checkpoint Frequency                    & 25\,000            \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -432,7 +435,7 @@ Figure~\ref{fig:training_curve} shows the learning trajectory over 600 episodes.
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.85\linewidth]{training_learning_curve.png}
+    \includegraphics[width=0.85\linewidth]{images/training_learning_curve.png}
     \caption{Training learning curve displaying per-episode returns (blue) and the 100-episode moving average return (red).}
     \label{fig:training_curve}
 \end{figure}
@@ -443,55 +446,48 @@ The trained agent was evaluated across an independent test trial consisting of 1
 The evaluation demonstrates an overall success rate of 68.00\% (Figure~\ref{fig:eval_success}) with an average landing error of 0.0504 units (Figure~\ref{fig:eval_summary}). However, some interesting analysis concluded from the performance metrics:
 
 \begin{itemize}
-   
+
     \item \textbf{Fuel Consumption vs. Control Strategy:} Figure~\ref{fig:eval_fuel} displays two dominant operational modes: low fuel usage ($\approx 30$--$50$ units) and high fuel usage ($\approx 160$--$180$ units). This suggests that while the agent successfully hovers and lands in 68\% of trials, it occasionally adopts an overly conservative hovering strategy that wastes fuel prior to touchdown, contributing to failing runs.
 
 \end{itemize}
 
-\begin{figure}[htbp]
+\newpage
+
+\newgeometry{left=0.5cm,right=0.5cm,top=1cm,bottom=2cm} % temporary margins
+
+\begin{figure}[h]
     \centering
+    \includegraphics[width=\textwidth,height=0.3\textheight,keepaspectratio]{images/episode_returns.png}
+    \caption{Episode Returns}
+    \label{fig:eval_returns}
 
-    % ===================== Row 1: Three graphs =====================
-    \begin{subfigure}{0.32\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{episode_returns.png}
-        \caption{Episode Returns}
-        \label{fig:eval_returns}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.32\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{fuel_consumption.png}
-        \caption{Fuel Consumption}
-        \label{fig:eval_fuel}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.32\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{landing_accuracy.png}
-        \caption{Landing Accuracy}
-        \label{fig:eval_accuracy}
-    \end{subfigure}
+    \vspace{0.5em}
 
-    \vspace{0.9em}
+    \includegraphics[width=\textwidth,height=0.3\textheight,keepaspectratio]{images/fuel_consumption.png}
+    \caption{Fuel Consumption}
+    \label{fig:eval_fuel}
 
-    % ===================== Row 2: Two plots =====================
-    \begin{subfigure}{0.48\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{evaluation_summary.png}
-        \caption{Evaluation Summary}
+    \vspace{0.5em}
+
+    \includegraphics[width=\textwidth,height=0.3\textheight,keepaspectratio]{images/landing_accuracy.png}
+    \caption{Landing Accuracy}
+    \label{fig:eval_accuracy}
+\end{figure}
+
+\thispagestyle{empty}
+
+\restoregeometry % back to the original margins
+
+\begin{figure}[!htb]
+    \subfigure[Evaluation Summary]{
+        \includegraphics[width=\dimexpr\textwidth/2\relax]{./images/evaluation_summary.png}
         \label{fig:eval_summary}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.48\linewidth}
-        \centering
-        \includegraphics[width=\linewidth]{success_rate.png}
-        \caption{Success vs Failure}
+    }
+    \subfigure[Success vs Failure]{
+        \includegraphics[width=\dimexpr\textwidth/2\relax]{./images/success_rate.png}
         \label{fig:eval_success}
-    \end{subfigure}
-
-    \caption{Overview of Evaluation Metrics Across All Experiments}
-    \label{fig:evaluation_overview}
+    }
+    \caption{End results}
 \end{figure}
 
 \subsection{Future Work and Extensions}
@@ -499,10 +495,10 @@ To address the remaining 32\% failure rate and improve trajectory stability, sev
 
 \begin{enumerate}
     \item \textbf{Extended Training Horizon:} Increasing the total training duration beyond 600 episodes could allow the agent to converge on a more robust policy.
-    
+
     \item \textbf{Hyperparameter Optimization:} Systematic grid or Bayesian optimization over learning rates ($\alpha$), target network update rates ($\tau$), and exploration decay profiles ($\epsilon$) could optimize fuel efficiency.
-    
-    \textbf{Reward Function Modification:} Applying a stronger penalty for continuous engine firing could incentivize the agent to avoid high-fuel hovering loops.
+
+          \textbf{Reward Function Modification:} Applying a stronger penalty for continuous engine firing could incentivize the agent to avoid high-fuel hovering loops.
 \end{enumerate}
 
 % =========== REFERENCES =========== 
