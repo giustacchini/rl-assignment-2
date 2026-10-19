@@ -3,3 +3,4 @@ pytest-cov
 gymnasium[box2d]
 keras
 tensorflow
+matplotlib
