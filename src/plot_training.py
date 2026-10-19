@@ -1,16 +1,12 @@
-from pathlib import Path
 import json
+import argparse
 import matplotlib.pyplot as plt
 
-project_root = Path(__file__).resolve().parent.parent
+parser = argparse.ArgumentParser(description="Plot training metrics.")
+parser.add_argument("metrics_path", help="Path to the metrics JSON file")
+args = parser.parse_args()
 
-metrics_path = Path(
-    r"C:\AAUni\third-semester\RL\rl-assignment-2\results\20261004_175513\final_metrics.json"
-)
-
-results_dir = metrics_path.parent
-plots_dir = results_dir / "plots"
-plots_dir.mkdir(exist_ok=True)
+metrics_path = args.metrics_path
 
 with open(metrics_path, "r") as file:
     metrics = json.load(file)
